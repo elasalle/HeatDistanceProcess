@@ -14,6 +14,14 @@ The files `extended_persistence.py`, `graphs.py`, `processes.py` contain tool fu
 
 All files starting with the prefix `fig`, _i.e._ `fig_confidence_bands.py`, `fig_confidence_bands_HPD.py`,  `fig_tests.py`, `fig_tests_HPD.py` and `fig_neyman_pearson.py` allow to generate the figures included in the paper.
 
+- `fig_confidence_bands.py` : confidence bands for HKD.
+- `fig_confidence_bands_HPD.py` : confidence bands for HPD.
+- `fig_tests.py` : test performances with HKD.
+- `fig_tests_HPD.py` : test performances with HPD.
+- `fig_neyman_pearson.py` : test performance for HKD, when working close to the Neyman-Pearson phase transition.
+
+Note that the files to evaluate tests' performances may take from a few minutes up to a few hours (especially with HPD) to compute.
+
 ## How to run this code
 
 ### Libraries
