@@ -15,8 +15,9 @@ from itertools import combinations
     #PERSISTENCE
 ################
 
-#Transform the adjacency matrix into a simplicial complex of dim 1. 
+#Transform the adjacency matrix into a simplicial complex of dim 1.
 def get_base_simplex_from_adjacency(A):
+    """create the simplicial complex associted to the adjacency matrix A."""
     num_vertices = A.shape[0]
     st = gd.SimplexTree()
     [st.insert([i], filtration=-1e10) for i in range(num_vertices)]
@@ -27,6 +28,23 @@ def get_base_simplex_from_adjacency(A):
     return basesimplex
 
 def ext_pers(A, filtration_val, basesimplex):
+    """compute the extended persistence diagrams for a graph equipped with a function on its vertices.
+
+    Parameters
+    ----------
+    A : (N,N) array_like
+        the adjacency of the (weighted) graph
+    filtration_val : (N,) array_like
+        array containing the filtration values on the num_vertices
+    basesimplex : list
+        list containing the simplex encoding the graph. Can be computed with the function get_base_simplex_from_adjacency
+
+    Returns
+    -------
+    dgmOrd0, dgmExt0, dgmRel1, dgmExt1 : tuple of diagrams
+        The four extended persistence diagrams as arrays with two columns. Each line encodes the coordinates of a point in a diagram.
+    """
+
     num_vertices = A.shape[0]
     (xs, ys) = np.where(np.triu(A))
     num_edges = len(xs)
@@ -106,9 +124,6 @@ def ext_pers(A, filtration_val, basesimplex):
     return dgmOrd0, dgmExt0, dgmRel1, dgmExt1
 
 def ext_bottleneck(dgms1, dgms2, e=0):
+    """Compute the maximum of the four bottleneck distances, associated to each type of extended persistence diagrams."""
     dist = np.max([ gd.bottleneck_distance(dgms1[k] , dgms2[k], e) for k in range(4) ])
     return dist
-
-def flip_dgm(dgm):
-    return dgm[:,[1,0]]
-

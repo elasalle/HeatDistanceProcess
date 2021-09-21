@@ -17,6 +17,21 @@ import extended_persistence as pers
 
 
 def laplacian_egelems(connect, nullfirstegv=True):
+    """compute the eigen elements of the Laplacian matrix.
+
+    Parameters
+    ----------
+    connect : (N,N) array_like
+        adjacency matrix of the unweighted graph
+    nullfirstegv : bool, default: True
+        if True, the smallest eigenvalue is set to exactly zero.
+
+    Returns
+    -------
+    egelems : list of length 2,
+        The first element is the (N) array of eigenvalues.
+        The second element is the (N,N) array of corresponding eigenvectors, put in columns.
+    """
     egvals, egvects = np.linalg.eigh(laplacian(connect, normed=False))
     if nullfirstegv:
         egvals[0] = 0.
@@ -26,16 +41,19 @@ def laplacian_egelems(connect, nullfirstegv=True):
 
 #heat diffusion tools
 def heat_kernel(egelems, time):
+    """Compute the heat kernel at a given time using the eigen-elements of the Laplacian matrix."""
     egvals, egvects = egelems[0], egelems[1]
     e = np.diag(np.exp(-time*egvals))
     return egvects @ e @ egvects.transpose()
 
 def hks(egelems, time):
+    """compute the Heat Kernel Signature at a given time using the eigen-elements of the Laplacian matrix."""
     egvals, egvects = egelems[0], egelems[1]
     signature = np.square(egvects).dot(np.diag(np.exp(-time * egvals))).sum(axis=1)
     return signature
 
 def HKD(egelems0, egelems1 , time):
+    """compute the Heat Kernel Distance at a given time using the eigen-elements of the two Laplacian matrices."""
     hk0 = heat_kernel(egelems0, time)
     hk1 = heat_kernel(egelems1, time)
     #K0, K1 = len(egvals0)*hk0, len(egvals1)*hk1
@@ -43,17 +61,48 @@ def HKD(egelems0, egelems1 , time):
     return dist
 
 def HKDs(params):
+    """compute the Heat Kernel Distances at a given times using the eigen-elements of the two Laplacian matrices.
+    Used for parallelization.
+
+    Parameters
+    ----------
+    params : tuple containing the paramters (egelems0, egelems1, ts)
+        egelemes0 : eigen-elements of the first Laplacian matrix
+        egelemes1 : eigen-elements of the second Laplacian matrix
+        ts : array, containing the time at which the HKD must be computed.
+
+    Returns
+    -------
+    dists : list
+        The HKD values.
+    """
     egelems0, egelems1 , ts = params
     dists = [ HKD(egelems0, egelems1 , t) for t in ts ]
     return dists
 
 def HPD(data0, data1 , t, e=0):
+    """compute the Heat Persistence Distance at a given time using the eigen-elements of the two Laplacian matrices."""
     hks0, hks1 = hks(data0[1],t) , hks(data1[1],t)
     base0, base1 = pers.get_base_simplex_from_adjacency(data0[0]), pers.get_base_simplex_from_adjacency(data1[0])
     dist =  pers.ext_bottleneck(pers.ext_pers(data0[0], hks0, base0), pers.ext_pers(data1[0], hks1, base1), e)
     return dist
 
 def HPDs(params):
+    """compute the Heat Persistence Distances at a given times using the eigen-elements of the two Laplacian matrices.
+    Used for parallelization.
+
+    Parameters
+    ----------
+    params : tuple containing the paramters (egelems0, egelems1, ts)
+        egelemes0 : eigen-elements of the first Laplacian matrix
+        egelemes1 : eigen-elements of the second Laplacian matrix
+        ts : array, containing the time at which the HPD must be computed.
+
+    Returns
+    -------
+    dists : list
+        The HPD values.
+    """
     if len(params)==3:
         data0, data1, ts = params
         e = 0
@@ -69,6 +118,27 @@ def HPDs(params):
 
 #statistical procedures
 def confidence_band(dists, alpha, n_bootstrap):
+    """Compute a confidence band around the empirical mean.
+
+    Parameters
+    ----------
+    dist : (N,M) array_like
+        the N distances functions computed at M times.
+    alpha : float, between 0 and 1
+        the desired level of the confidence band. For example 0.05.
+    n_bootstrap : int
+        number of bootstrap samples to be drawn.
+
+    Returns
+    -------
+    mean_dists : (M,) numpy.array
+        the empirical mean of the distances.
+    l_conf : (M,) numpy.array
+        the lower part of the confidence band.
+    u_conf : (M,) numpy.array
+        the upper part of the confidence band.
+    """
+
     N = dists.shape[0]
     mean_dists = np.mean(dists, axis=0)
     dists_centered = dists - mean_dists
@@ -83,6 +153,24 @@ def confidence_band(dists, alpha, n_bootstrap):
     return mean_dists, l_conf, h_conf
 
 def test(dists1, dists2, alpha, n_bootstrap):
+    """Perform a two-sample test.
+
+    Parameters
+    ----------
+    dist1 : (N1,M) array_like
+        the first set of N1 distances functions computed at M times.
+    dist2 : (N2,M) array_like
+        the second set of N2 distances functions computed at M times.
+    alpha : float, between 0 and 1
+        the desired level of the test. For example 0.05.
+    n_bootstrap : int
+        number of bootstrap samples to be drawn.
+
+    Returns
+    -------
+    null_rejected : bool,
+        True, if the null hypothesis is rejected.
+    """
     #distsi must be of shape (N_i,n_times)    ; n_times needs to be a common size
     N1, N2 = dists1.shape[0], dists2.shape[0]
     N = N1+N2
@@ -110,6 +198,7 @@ def test(dists1, dists2, alpha, n_bootstrap):
     return null_rejected
 
 def tests_conf_interval(tests, alpha = 0.05):
+    """Compute a confidence interval on a sample of Bernoulli variable."""
     n = len(tests)
     p = np.sum(tests)/n
     if p==0:
