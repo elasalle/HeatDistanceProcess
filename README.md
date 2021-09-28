@@ -1,6 +1,6 @@
 # Heat Distance Processes
 
-This repository provides codes that generated the figure in the paper _INSERT PAPER'S NAME_.
+This repository provides codes that generated the figures in the paper [Heat diffusion distance processes: a statistically founded method to analyze graph data sets](https://arxiv.org/abs/2109.13213).
 
 ## Summary
 
